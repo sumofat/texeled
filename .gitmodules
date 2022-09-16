@@ -1,0 +1,6 @@
+[submodule "FullMetalJacket"]
+	path = FullMetalJacket
+	url = https://github.com/godratio/FullMetalJacket.git
+[submodule "sokol"]
+	path = sokol
+	url = https://github.com/floooh/sokol.git
