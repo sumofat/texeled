@@ -12,6 +12,11 @@ sg_pass_action pass_action;
 f2 window_size = {640, 480};
 FMJFixedBuffer ui_fixed_quad_buffer;
 
+typedef struct{
+	f4x4 mvp;
+} VParams;
+sg_pipeline pip; 
+sg_bindings bind;
 void init(void){
 	sg_setup(&(sg_desc){
 		.context = sapp_sgcontext()
@@ -61,19 +66,88 @@ void init(void){
 
 	//ui  evaulation
 	fmj_ui_evaluate_node(&base_node,&ui_state.hot_node_state);
-
 	fmj_ui_commit_nodes_for_drawing(&sb_ui.arena,base_node,&ui_fixed_quad_buffer,white,uvs);
 
+	/* a vertex buffer */
+	const float vertices[] = {
+		// positions            // colors
+		0.0f,  0.5f, 0.5f,     1.0f, 0.0f, 0.0f, 1.0f,
+		0.5f, -0.5f, 0.5f,     0.0f, 1.0f, 0.0f, 1.0f,
+		-0.5f, -0.5f, 0.5f,     0.0f, 0.0f, 1.0f, 1.0f
+	};
+
+	sg_buffer vbuf = sg_make_buffer(&(sg_buffer_desc){
+			.data = SG_RANGE(vertices)
+	});
+
+	/* a shader */
+	sg_shader shd = sg_make_shader(&(sg_shader_desc){
+			.attrs = {
+				[0].sem_name = "POSITION",
+				[1].sem_name = "COLOR"
+			},
+			.vs.uniform_blocks[0] = {
+				.size = sizeof(VParams),
+				.uniforms = {
+					[0] = { .name = "mvp", .type = SG_UNIFORMTYPE_MAT4 }
+				}
+			},
+
+			.vs.source =
+			"struct vs_in{\n"
+			"float3 p : POSITION;\n"
+			"float4 c : COLOR;\n"
+			"};\n"
+			"struct vs_out{\n"
+			"float4 p : SV_Position;\n"
+			"};\n"
+			"vs_out main(vs_in inp){\n"
+			"float4 p = in.p;\n"
+			"vs_out outp;\n"
+			"outp.p = p;\n"
+			"return outp;\n"
+			"};\n",
+
+			.fs.source =
+			"struct fs_in{\n"
+			"float4 c : COLOR;\n"
+			"}\n"
+			"float4 main(fs_in inp) : SV_Target0{\n"
+			"return float4(1,0,0,1);\n"
+			"}\n",
+    });
+
+	/* a pipeline state object (default render states are fine for triangle) */
+    pip = sg_make_pipeline(&(sg_pipeline_desc){
+		.cull_mode = SG_CULLMODE_BACK,
+        .shader = shd,
+        .layout = {
+            .attrs = {
+                [0].format=SG_VERTEXFORMAT_FLOAT3,
+                [1].format=SG_VERTEXFORMAT_FLOAT4
+            }
+        }
+    });
+
+	/* resource bindings */
+	bind = (sg_bindings){
+		.vertex_buffers[0] = vbuf
+	};
 }
-	
 
 void frame(void) {
 
+	f4x4 mvp = f4x4_identity();
+
     float g = pass_action.colors[0].value.g + 0.01f;
     pass_action.colors[0].value.g = (g > 1.0f) ? 0.0f : g;
-    sg_begin_default_pass(&pass_action, sapp_width(), sapp_height());
-    sg_end_pass();
-    sg_commit();
+	sg_begin_default_pass(&pass_action,sapp_width(),sapp_height());
+	sg_apply_pipeline(pip);
+	sg_apply_bindings(&bind);
+	sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, &SG_RANGE(mvp));
+	sg_draw(0, 36, 1);
+	sg_end_pass();
+	sg_commit();
 }
 
 void cleanup(void) {
