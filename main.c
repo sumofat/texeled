@@ -1,13 +1,13 @@
 #include <stdio.h>
 #define SOKOL_IMPL
 #define SOKOL_D3D11
+#define SOKOL_LOG(s) OutputDebugString(s)
 #include "sokol/sokol_gfx.h"
 #include "sokol/sokol_app.h"
 #include "sokol/sokol_glue.h"
 #include "FullMetalJacket/src/fmj.c"
 #include "ui/ui.h"
 #include "engine/sprite/sprite.h"
-
 sg_pass_action pass_action;
 f2 window_size = {640, 480};
 FMJFixedBuffer ui_fixed_quad_buffer;
@@ -22,7 +22,7 @@ void init(void){
 		.context = sapp_sgcontext()
 	});
 	pass_action = (sg_pass_action){
-		.colors[0] = { .action = SG_ACTION_CLEAR, .value = { 0.0f, 0.0f, 0.0f, 1.0f } }
+		.colors[0] = { .action = SG_ACTION_CLEAR, .value = { 0.1f, 0.0f, 0.6f, 1.0f } }
 	};
 
 	u64 quad_mem_size = SIZE_OF_SPRITE_IN_BYTES * 100;
@@ -68,31 +68,41 @@ void init(void){
 	fmj_ui_evaluate_node(&base_node,&ui_state.hot_node_state);
 	fmj_ui_commit_nodes_for_drawing(&sb_ui.arena,base_node,&ui_fixed_quad_buffer,white,uvs);
 
-	/* a vertex buffer */
-	const float vertices[] = {
-		// positions            // colors
-		0.0f,  0.5f, 0.5f,     1.0f, 0.0f, 0.0f, 1.0f,
-		0.5f, -0.5f, 0.5f,     0.0f, 1.0f, 0.0f, 1.0f,
-		-0.5f, -0.5f, 0.5f,     0.0f, 0.0f, 1.0f, 1.0f
-	};
+	/* vertex and index buffer */
+    const float vertices[] = {
+        /* positions            colors */
+        -0.5f,  0.5f, 0.5f,     1.0f, 0.0f, 0.0f, 1.0f,
+         0.5f,  0.5f, 0.5f,     0.0f, 1.0f, 0.0f, 1.0f,
+         0.5f, -0.5f, 0.5f,     0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f,     1.0f, 1.0f, 0.0f, 1.0f,
+    };
+
+    const uint16_t indices[] = {
+        0, 1, 2,    /* first triangle */
+        0, 2, 3,    /* second triangle */
+    };
 
 	sg_buffer vbuf = sg_make_buffer(&(sg_buffer_desc){
 			.data = SG_RANGE(vertices)
 	});
 
+	sg_buffer ibuf = sg_make_buffer(&(sg_buffer_desc){
+        .type = SG_BUFFERTYPE_INDEXBUFFER,
+        .data = SG_RANGE(indices)
+    });
+
+	/* resource bindings */
+    bind = (sg_bindings){
+        .vertex_buffers[0] = vbuf,
+        .index_buffer = ibuf
+    };
+
 	/* a shader */
 	sg_shader shd = sg_make_shader(&(sg_shader_desc){
 			.attrs = {
 				[0].sem_name = "POSITION",
-				[1].sem_name = "COLOR"
+				[1].sem_name = "COLOR",
 			},
-			.vs.uniform_blocks[0] = {
-				.size = sizeof(VParams),
-				.uniforms = {
-					[0] = { .name = "mvp", .type = SG_UNIFORMTYPE_MAT4 }
-				}
-			},
-
 			.vs.source =
 			"struct vs_in{\n"
 			"float3 p : POSITION;\n"
@@ -102,17 +112,14 @@ void init(void){
 			"float4 p : SV_Position;\n"
 			"};\n"
 			"vs_out main(vs_in inp){\n"
-			"float4 p = in.p;\n"
+			"float4 p = float4(inp.p,1);\n"
 			"vs_out outp;\n"
 			"outp.p = p;\n"
 			"return outp;\n"
 			"};\n",
 
 			.fs.source =
-			"struct fs_in{\n"
-			"float4 c : COLOR;\n"
-			"}\n"
-			"float4 main(fs_in inp) : SV_Target0{\n"
+			"float4 main() : SV_Target0{\n"
 			"return float4(1,0,0,1);\n"
 			"}\n",
     });
@@ -121,31 +128,27 @@ void init(void){
     pip = sg_make_pipeline(&(sg_pipeline_desc){
 		.cull_mode = SG_CULLMODE_BACK,
         .shader = shd,
+		.index_type = SG_INDEXTYPE_UINT16,
         .layout = {
             .attrs = {
-                [0].format=SG_VERTEXFORMAT_FLOAT3,
-                [1].format=SG_VERTEXFORMAT_FLOAT4
+                [0] = {.format=SG_VERTEXFORMAT_FLOAT3},
+                [1] = {.format=SG_VERTEXFORMAT_FLOAT4}
             }
         }
     });
-
-	/* resource bindings */
-	bind = (sg_bindings){
-		.vertex_buffers[0] = vbuf
-	};
 }
 
 void frame(void) {
 
-	f4x4 mvp = f4x4_identity();
+//	f4x4 mvp = f4x4_identity();
 
-    float g = pass_action.colors[0].value.g + 0.01f;
-    pass_action.colors[0].value.g = (g > 1.0f) ? 0.0f : g;
+    //float g = pass_action.colors[0].value.g + 0.01f;
+    //pass_action.colors[0].value.g = (g > 1.0f) ? 0.0f : g;
 	sg_begin_default_pass(&pass_action,sapp_width(),sapp_height());
 	sg_apply_pipeline(pip);
 	sg_apply_bindings(&bind);
-	sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, &SG_RANGE(mvp));
-	sg_draw(0, 36, 1);
+//	sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, &SG_RANGE(mvp));
+	sg_draw(0, 6, 1);
 	sg_end_pass();
 	sg_commit();
 }
