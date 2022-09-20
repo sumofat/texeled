@@ -15,8 +15,10 @@ FMJFixedBuffer ui_fixed_quad_buffer;
 typedef struct{
 	f4x4 mvp;
 } VParams;
+
 sg_pipeline pip; 
 sg_bindings bind;
+
 void init(void){
 	sg_setup(&(sg_desc){
 		.context = sapp_sgcontext()
@@ -40,6 +42,8 @@ void init(void){
 	f2 sttl = f2_create(0.0f,1.0f);
 	f2 uvs[4] = {stbl,stbr,sttr,sttl};
 	f4 white = f4_create(1,1,1,1);	
+
+	FMJSprite sprite = fmj_sprite_init(3,uvs, white,true);
 
 	FMJUIState ui_state = {0};
 	FMJUINode base_node = {0};
