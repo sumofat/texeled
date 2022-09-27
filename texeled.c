@@ -33,8 +33,22 @@ int main(int argv,char* argc[]){
 	vec3f bbb = {2,2,2};
 	vec3f ccc = aaa * bbb;
 
+	float2 f2a = {2,2};
+	float2 f2b = {2,2};
+	//f2 testa = f2_create(2,2);
+	f32 sum_result = sum(f2a);
+
+	float3 f3a = {2,2,2};
+	float float3_sum_result = sum(f3a);
+
 	float atest = aaa[0];	
 	f32proto aaaa = {aaa[0],aaa[1],aaa[2]};
+
+	float3 dot_testa = {0,1,0};
+	float3 dot_testb = {0,1,0};
+	float dotp = dot(dot_testa,dot_testb);
+	
+	f3 conv_test = (f3){dot_testa[0],dot_testa[1],dot_testa[2]};
 
 	for (int i = 0; i < argv; i++){
 		printf("%s/n", argc[i]);
@@ -49,13 +63,46 @@ int main(int argv,char* argc[]){
 	ID3D12CommandQueue* commandQueue = CreateCommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 	IDXGISwapChain4* swapchain = CreateSwapChain(app.window.ptr,commandQueue,window_size.x,window_size.y,2);
 
+	DescriptorHeap rtv_heap = create_descriptor_heap(device,RTV,2,NONE);
+
+	ID3D12Resource* back_buffers[2];
+	init_back_buffers(2,back_buffers,device,swapchain,rtv_heap.ptr);
+
+	Fence fence = create_fence(device);
+	EventHandle eh = create_event_handle();
+
+	ID3D12CommandAllocator* command_allocator;
+	ID3D12Device2_CreateCommandAllocator(device, D3D12_COMMAND_LIST_TYPE_DIRECT,&IID_ID3D12CommandAllocator,(void**)&command_allocator);
+
+	ID3D12GraphicsCommandList* command_list;
+	ID3D12Device2_CreateCommandList(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, command_allocator, NULL, &IID_ID3D12GraphicsCommandList, (void**)&command_list);
+	ID3D12GraphicsCommandList_Close(command_list);
+	ID3D12CommandAllocator_Reset(command_allocator);
+
+
+	//Create a vertex buffer quad
+	Vertex vertices[] = {
+		{ 
+			{ 0.0f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } 
+		},
+		{ 
+			{ 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } 
+		},
+		{ 
+			{ -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } 
+		}
+	};
+
+
+
+
+
+
+
 	while(app.is_running){
 		fmj_app_update(&app);
 	}
 
 	return 1;
 }
-
-
-
 
