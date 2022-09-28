@@ -35,7 +35,7 @@ int main(int argv,char* argc[]){
 
 	float2 f2a = {2,2};
 	float2 f2b = {2,2};
-	//f2 testa = f2_create(2,2);
+
 	f32 sum_result = sum(f2a);
 
 	float3 f3a = {2,2,2};
@@ -52,6 +52,8 @@ int main(int argv,char* argc[]){
 
 	float2 sqroot_test = sqroot(f2a);
 	float3 sqroot_testfloat3 = sqroot(dot_testa);
+
+	float2 normlaized_float2 = normalize(f2a);
 
 	for (int i = 0; i < argv; i++){
 		printf("%s/n", argc[i]);
