@@ -50,12 +50,17 @@ int main(int argv,char* argc[]){
 	
 	f3 conv_test = (f3){dot_testa[0],dot_testa[1],dot_testa[2]};
 
+	float2 sqroot_test = sqroot(f2a);
+	float3 sqroot_testfloat3 = sqroot(dot_testa);
+
 	for (int i = 0; i < argv; i++){
 		printf("%s/n", argc[i]);
 	}
 
 	FMJApp app = fmj_app_create();
 	app.is_running = true;
+
+#if WINDOWS
 
 	EnableDebugLayer();
 	IDXGIAdapter4* adapter = GetAdapter(false);
@@ -79,7 +84,10 @@ int main(int argv,char* argc[]){
 	ID3D12GraphicsCommandList_Close(command_list);
 	ID3D12CommandAllocator_Reset(command_allocator);
 
+#elif OSX || IOS
+#endif
 
+	/*
 	//Create a vertex buffer quad
 	Vertex vertices[] = {
 		{ 
@@ -92,16 +100,12 @@ int main(int argv,char* argc[]){
 			{ -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } 
 		}
 	};
-
-
-
-
-
-
+	*/
 
 	while(app.is_running){
 		fmj_app_update(&app);
 	}
+
 
 	return 1;
 }
